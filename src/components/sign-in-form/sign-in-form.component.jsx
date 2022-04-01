@@ -2,37 +2,56 @@ import { useState } from "react";
 import './sign-in-form.styles.scss';
 import FormInput from "../form-input/form-input.component";
 import Button from "../button/button.componet";
-import { createUserDocumnetFromAuth, SignInWithGooglePopup, signInwithUserEmailandPassword } from "../../utils/firebase/firebase.utils";
+import { SignInWithGooglePopup, signInwithUserEmailandPassword } from "../../utils/firebase/firebase.utils";
+
 
 const SignInForm = () => {
 
+  
   const defaultFormFields = {
     email: "",
     password: "",
   };
-
-  const [formFields, setFormFieds] = useState(defaultFormFields);
-
+  
+  const [formFields, setFormFields] = useState(defaultFormFields);
   const { email, password } = formFields;
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormFieds({ ...formFields, [name]: value });
+    setFormFields({ ...formFields, [name]: value });
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const resetFormFields = () => {
+    setFormFields(defaultFormFields);
+  };
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (!email.length || !password.length) return;
 
-    signInwithUserEmailandPassword(email,password);
-
+    try {
+      const { user } = await signInwithUserEmailandPassword(
+        email,
+        password
+      );
+      resetFormFields();
+    } catch (error) {
+      switch (error.code) {
+        case 'auth/wrong-password':
+          alert('incorrect password for email');
+          break;
+        case 'auth/user-not-found':
+          alert('no user associated with this email');
+          break;
+        default:
+          console.log(error);
+      }
+    }
   };
 
 
   const signInWithGoole = async () => {
-    const { user } = await SignInWithGooglePopup();
-     await createUserDocumnetFromAuth(user);
+    await SignInWithGooglePopup();
   };
 
 
