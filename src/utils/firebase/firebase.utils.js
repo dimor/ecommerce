@@ -8,10 +8,20 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from "firebase/auth";
 
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  writeBatch,
+  query,
+  getDocs,
+  arrayRemove,
+} from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -39,7 +49,6 @@ export const SignInWithGooglePopup = () =>
 export const signInWithGoogleRedirect = () =>
   signInWithRedirect(auth, googleProvider);
 
-
 export const signInwithUserEmailandPassword = async (email, password) => {
   if (!email || !password) return;
 
@@ -47,6 +56,39 @@ export const signInwithUserEmailandPassword = async (email, password) => {
 };
 
 export const db = getFirestore();
+
+//                                             collection key name ('categories')  , our json data
+export const addCollectionAndDocumnet = async (collectionKey, objectsToAdd) => {
+  const collectionRef = collection(db, collectionKey);
+
+  const batch = writeBatch(db);
+
+  objectsToAdd.forEach((object) => {
+    const docRef = doc(collectionRef, object.title.toLowerCase());
+    batch.set(docRef, object);
+  });
+
+  await batch.commit();
+
+  console.log("done");
+};
+
+export const getCategoriesAndDocuments = async () => {  
+  const collectionRef = collection(db, "categories"); 
+  const queryObject = query(collectionRef);
+  const querySnapshot = await getDocs(queryObject);
+  const categoryMap = querySnapshot.docs.reduce((acc, currentDocSnapshot) => {
+    const { title, items } = currentDocSnapshot.data();
+    acc[title.toLowerCase()] = items;
+    return acc;
+  }, {});
+  return categoryMap;
+
+// 1. get ref of category
+// 2. get query obj of category 
+// 3. get query Snapshot  of category ( pass query obj as parameter) => array of queary snapshot documents 
+// 4. reduce - loop through array of query docs, get the key title and the items and build a map with reducer
+};
 
 export const createUserDocumnetFromAuth = async (
   userAuth,
@@ -80,14 +122,8 @@ export const createAuthUserWithEmailAndPassword = async (email, password) => {
   return await createUserWithEmailAndPassword(auth, email, password);
 };
 
+export const signOutUser = async () => await signOut(auth);
 
-export const signOutUser= async ()=> await signOut(auth);
-
-export const onAuthStateChangedListener =(callback)=>{
-
-
-
-
-  return onAuthStateChanged(auth,callback)
-}
-
+export const onAuthStateChangedListener = (callback) => {
+  return onAuthStateChanged(auth, callback);
+};
